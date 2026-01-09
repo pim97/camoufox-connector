@@ -123,6 +123,24 @@ camoufox-connector --mode pool --pool-size 5
 camoufox-connector --proxy http://user:pass@host:port
 ```
 
+### Language Examples
+
+Full working examples are available for many programming languages:
+
+| Language | Directory | Playwright Support |
+|----------|-----------|-------------------|
+| **Node.js** | [`examples/nodejs/`](examples/nodejs/) | Full |
+| **TypeScript** | [`examples/typescript/`](examples/typescript/) | Full |
+| **Python** | [`examples/python/`](examples/python/) | Full |
+| **Go** | [`examples/go/`](examples/go/) | Full |
+| **Java** | [`examples/java/`](examples/java/) | Full |
+| **Kotlin** | [`examples/kotlin/`](examples/kotlin/) | Full |
+| **C# (.NET)** | [`examples/csharp/`](examples/csharp/) | Full |
+| **Ruby** | [`examples/ruby/`](examples/ruby/) | API only |
+| **PHP** | [`examples/php/`](examples/php/) | API only |
+| **Rust** | [`examples/rust/`](examples/rust/) | API only |
+| **cURL/Shell** | [`examples/curl/`](examples/curl/) | API only |
+
 ### Connect from Node.js
 
 ```javascript

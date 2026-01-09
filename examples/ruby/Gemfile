@@ -1,0 +1,6 @@
+source 'https://rubygems.org'
+
+# Optional: For full Playwright integration
+# gem 'playwright-ruby-client', '~> 1.44'
+
+# JSON parsing is included in Ruby stdlib
