@@ -1,6 +1,6 @@
 [package]
 name = "camoufox-connector-example"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 description = "Rust example for connecting to Camoufox Connector"
 

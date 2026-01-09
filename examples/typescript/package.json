@@ -1,6 +1,6 @@
 {
   "name": "camoufox-connector-typescript-example",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "TypeScript example for Camoufox Connector",
   "type": "module",
   "scripts": {
