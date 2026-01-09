@@ -8,6 +8,54 @@
 
 Connect to [Camoufox](https://github.com/daijro/camoufox) from **any programming language** that has Playwright bindings - Node.js, Go, Java, .NET, Python, and more.
 
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph clients["Client Applications"]
+        NodeJS["Node.js<br/>Playwright"]
+        Go["Go<br/>Playwright"]
+        Java["Java<br/>Playwright"]
+        Python["Python<br/>Playwright"]
+        Other["Other Languages<br/>Playwright"]
+    end
+    
+    subgraph connector["Camoufox Connector"]
+        API["HTTP API<br/>:8080<br/>GET /next"]
+        LB["Round-Robin<br/>Load Balancer"]
+        
+        subgraph pool["Browser Pool"]
+            B1["Camoufox 1<br/>WS :9222<br/>Fingerprint A"]
+            B2["Camoufox 2<br/>WS :9223<br/>Fingerprint B"]
+            B3["Camoufox N<br/>WS :922X<br/>Fingerprint N"]
+        end
+    end
+    
+    NodeJS -->|"WebSocket"| API
+    Go -->|"WebSocket"| API
+    Java -->|"WebSocket"| API
+    Python -->|"WebSocket"| API
+    Other -->|"WebSocket"| API
+    
+    API -->|"Round-Robin"| LB
+    LB -->|"Distribute"| B1
+    LB -->|"Distribute"| B2
+    LB -->|"Distribute"| B3
+    
+    style clients fill:#e1f5ff
+    style connector fill:#fff4e1
+    style pool fill:#e8f5e9
+    style API fill:#ffebee
+    style LB fill:#f3e5f5
+```
+
+**How it works:**
+1. **Clients** (Node.js, Go, Python, etc.) connect via Playwright
+2. **HTTP API** provides endpoints via `GET /next` (round-robin)
+3. **Load Balancer** distributes connections across browser instances
+4. **Browser Pool** maintains multiple Camoufox instances with unique fingerprints
+5. Each client gets a **WebSocket endpoint** to connect directly to a browser
+
 ---
 
 ## Sponsored by [Scrappey](https://scrappey.com/)
@@ -322,33 +370,6 @@ services:
     restart: unless-stopped
 ```
 
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Client Applications                          │
-│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────────────────┐ │
-│  │ Node.js │  │   Go    │  │  Java   │  │  Other Playwright   │ │
-│  │Playwright│  │Playwright│  │Playwright│  │     Clients        │ │
-│  └────┬────┘  └────┬────┘  └────┬────┘  └──────────┬──────────┘ │
-└───────┼────────────┼────────────┼───────────────────┼───────────┘
-        │            │            │                   │
-        └────────────┴────────────┴───────────────────┘
-                              │
-                    ┌─────────▼─────────┐
-                    │   HTTP API :8080   │
-                    │  GET /next (RR)    │
-                    └─────────┬─────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-        ▼                     ▼                     ▼
-┌───────────────┐   ┌───────────────┐   ┌───────────────┐
-│  Camoufox 1   │   │  Camoufox 2   │   │  Camoufox N   │
-│  WS :9222     │   │  WS :9223     │   │  WS :922X     │
-│  Fingerprint A│   │  Fingerprint B│   │  Fingerprint N│
-└───────────────┘   └───────────────┘   └───────────────┘
-```
 
 ## Use Cases
 
