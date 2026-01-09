@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "camoufox-connector"
+version = "1.0.0"
+description = "WebSocket bridge for multi-language Playwright access to Camoufox anti-detect browser"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "Scrappey", email = "info@scrappey.com"}
+]
+keywords = [
+    "camoufox",
+    "playwright",
+    "websocket",
+    "anti-detect",
+    "browser",
+    "automation",
+    "scraping"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: Browsers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "camoufox>=0.4.0",
+    "playwright>=1.40.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "starlette>=0.35.0",
+    "uvicorn>=0.25.0",
+    "httpx>=0.26.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.23.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+camoufox-connector = "camoufox_connector.server:main"
+
+[project.urls]
+Homepage = "https://github.com/pim97/camoufox-connector"
+Documentation = "https://github.com/pim97/camoufox-connector#readme"
+Repository = "https://github.com/pim97/camoufox-connector"
+Issues = "https://github.com/pim97/camoufox-connector/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.black]
+line-length = 100
+target-version = ["py39", "py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

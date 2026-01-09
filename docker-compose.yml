@@ -1,0 +1,80 @@
+# Camoufox Connector - Docker Compose Configuration
+#
+# Usage:
+#   Single mode:  docker compose up
+#   Pool mode:    docker compose --profile pool up
+#   Custom config: docker compose -f docker-compose.yml -f docker-compose.custom.yml up
+
+services:
+  # Single browser instance mode
+  camoufox:
+    build: .
+    container_name: camoufox-connector
+    ports:
+      - "8080:8080"       # HTTP API
+      - "9222:9222"       # WebSocket endpoint
+    environment:
+      - CAMOUFOX_MODE=single
+      - CAMOUFOX_HEADLESS=true
+      - CAMOUFOX_GEOIP=true
+      - CAMOUFOX_HUMANIZE=true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    # Shared memory size (required for browsers)
+    shm_size: 2gb
+
+  # Pool mode with multiple browser instances
+  camoufox-pool:
+    build: .
+    container_name: camoufox-connector-pool
+    profiles:
+      - pool
+    ports:
+      - "8080:8080"       # HTTP API
+      - "9222-9230:9222-9230"  # WebSocket endpoints
+    environment:
+      - CAMOUFOX_MODE=pool
+      - CAMOUFOX_POOL_SIZE=5
+      - CAMOUFOX_HEADLESS=true
+      - CAMOUFOX_GEOIP=true
+      - CAMOUFOX_HUMANIZE=true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    # More shared memory for multiple browsers
+    shm_size: 4gb
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+
+  # Pool mode with proxy
+  camoufox-proxy:
+    build: .
+    container_name: camoufox-connector-proxy
+    profiles:
+      - proxy
+    ports:
+      - "8080:8080"
+      - "9222-9230:9222-9230"
+    environment:
+      - CAMOUFOX_MODE=pool
+      - CAMOUFOX_POOL_SIZE=3
+      - CAMOUFOX_HEADLESS=true
+      - CAMOUFOX_PROXY=${PROXY_URL:-}
+    restart: unless-stopped
+    shm_size: 4gb
+
+networks:
+  default:
+    name: camoufox-network
