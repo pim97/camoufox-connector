@@ -1,5 +1,5 @@
 # Core dependencies
-camoufox>=0.4.0
+camoufox[geoip]>=0.4.0
 playwright>=1.40.0
 
 # Configuration

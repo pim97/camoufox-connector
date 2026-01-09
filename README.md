@@ -462,12 +462,26 @@ async function getHealthyEndpoint() {
 ### Browser fails to start
 
 ```bash
-# Check if Camoufox is installed
+# Check if Camoufox is installed with GeoIP support
 python -c "from camoufox.sync_api import Camoufox; print('OK')"
 
-# Install if missing
-pip install camoufox
+# Install with GeoIP support (required for --geoip flag)
+pip install camoufox[geoip]
 python -m playwright install firefox
+```
+
+### GeoIP database error
+
+If you see `InvalidDatabaseError: Error opening database file`, install camoufox with GeoIP support:
+
+```bash
+pip install camoufox[geoip]
+```
+
+Or disable GeoIP if you don't need it:
+
+```bash
+camoufox-connector --no-geoip
 ```
 
 ### Connection refused
