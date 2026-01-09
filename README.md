@@ -1,14 +1,16 @@
 # Camoufox Connector
 
+[![PyPI version](https://badge.fury.io/py/camoufox-connector.svg)](https://pypi.org/project/camoufox-connector/)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **WebSocket bridge for multi-language Playwright access to Camoufox anti-detect browser**
 
 Connect to [Camoufox](https://github.com/daijro/camoufox) from **any programming language** that has Playwright bindings - Node.js, Go, Java, .NET, Python, and more.
 
 ---
 
-## Sponsored by Scrappey
-
-[![Scrappey - Web Scraping API](https://scrappey.com/scrape.png)](https://scrappey.com/)
+## Sponsored by [Scrappey](https://scrappey.com/)
 
 **Tired of getting blocked while scraping the web?**
 
@@ -40,6 +42,13 @@ Camoufox is a powerful anti-detect browser based on Firefox, but its Python-only
 ## Quick Start
 
 ### Installation
+
+```bash
+# Install from PyPI
+pip install camoufox-connector
+```
+
+Or install from source:
 
 ```bash
 # Clone the repository
@@ -455,6 +464,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Links
 
+- [PyPI Package](https://pypi.org/project/camoufox-connector/)
+- [GitHub Repository](https://github.com/pim97/camoufox-connector)
 - [Camoufox Documentation](https://camoufox.com/)
 - [Playwright Documentation](https://playwright.dev/docs/intro)
-- [GitHub Repository](https://github.com/pim97/camoufox-connector)
