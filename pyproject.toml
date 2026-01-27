@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "camoufox-connector"
-version = "1.0.2"
+version = "1.0.3"
 description = "WebSocket bridge for multi-language Playwright access to Camoufox anti-detect browser"
 readme = "README.md"
 license = {text = "MIT"}

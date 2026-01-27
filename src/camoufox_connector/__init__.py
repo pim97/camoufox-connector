@@ -5,7 +5,7 @@ Connect to Camoufox anti-detect browser from any programming language
 via Playwright's remote protocol.
 """
 
-__version__ = "1.0.1"
+__version__ = "1.0.3"
 __author__ = "Scrappey"
 
 from .config import Settings
