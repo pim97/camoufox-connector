@@ -10,12 +10,15 @@ Supports configuration via:
 from __future__ import annotations
 
 import json
+import logging
 from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 
 class ServerMode(str, Enum):
@@ -118,6 +121,17 @@ class Settings(BaseSettings):
         if not v.startswith(("http://", "https://", "socks5://")):
             raise ValueError("Proxy must start with http://, https://, or socks5://")
         return v
+
+    @model_validator(mode='after')
+    def validate_geoip_requires_proxy(self) -> 'Settings':
+        """Warn and disable geoip if no proxy is configured."""
+        if self.geoip and not self.proxy:
+            logger.warning(
+                "geoip=True requires a proxy to be configured. "
+                "Automatically disabling geoip. Set a proxy or use --no-geoip to silence this warning."
+            )
+            self.geoip = False
+        return self
 
     @classmethod
     def from_json(cls, path: str | Path) -> Settings:

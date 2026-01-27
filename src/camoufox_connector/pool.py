@@ -149,10 +149,22 @@ class BrowserPool:
         """Generate Python script to launch Camoufox server."""
         kwargs = self.settings.to_camoufox_kwargs()
 
-        # Build the script - note: launch_server doesn't accept port parameter
-        # The port is managed by Camoufox automatically
-        proxy_line = f"proxy='{kwargs['proxy']}'," if kwargs.get('proxy') else ""
-        
+        # Build kwargs string, only including non-None values
+        kwargs_items = []
+        for key, value in kwargs.items():
+            if value is not None:
+                if isinstance(value, bool):
+                    kwargs_items.append(f"    {key}={value},")
+                elif isinstance(value, str):
+                    kwargs_items.append(f"    {key}='{value}',")
+                else:
+                    kwargs_items.append(f"    {key}={value!r},")
+
+        kwargs_str = "\n".join(kwargs_items)
+
+        # Custom launch script that filters None values from config
+        # This works around a bug in camoufox 0.4.11 where proxy=None
+        # gets serialized as null and breaks the Node.js server
         script = f"""
 import sys
 if sys.platform == 'win32':
@@ -160,15 +172,42 @@ if sys.platform == 'win32':
     sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer)
     sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer)
 
-from camoufox.server import launch_server
+import subprocess
+import base64
+import orjson
+from pathlib import Path
+from playwright._impl._driver import compute_driver_executable
+from camoufox.pkgman import LOCAL_DATA
+from camoufox.utils import launch_options
+from camoufox.server import to_camel_case_dict
 
-launch_server(
-    headless={kwargs.get('headless', True)},
-    geoip={kwargs.get('geoip', True)},
-    humanize={kwargs.get('humanize', True)},
-    block_images={kwargs.get('block_images', False)},
-    {proxy_line}
+# Get config from launch_options
+config = launch_options(
+{kwargs_str}
 )
+
+# Filter out None values (workaround for camoufox bug)
+config = {{k: v for k, v in config.items() if v is not None}}
+
+# Launch the server (same as camoufox.server.launch_server but with filtered config)
+LAUNCH_SCRIPT = LOCAL_DATA / "launchServer.js"
+_nodejs = compute_driver_executable()[0]
+nodejs = _nodejs[0] if isinstance(_nodejs, tuple) else _nodejs
+
+data = orjson.dumps(to_camel_case_dict(config))
+
+process = subprocess.Popen(
+    [nodejs, str(LAUNCH_SCRIPT)],
+    cwd=Path(nodejs).parent / "package",
+    stdin=subprocess.PIPE,
+    text=True,
+)
+if process.stdin:
+    process.stdin.write(base64.b64encode(data).decode())
+    process.stdin.close()
+
+process.wait()
+raise RuntimeError("Server process terminated unexpectedly")
 """
         return script.strip()
 
