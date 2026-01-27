@@ -29,6 +29,7 @@ flowchart TB
             B2["Camoufox 2<br/>WS :9223<br/>Fingerprint B"]
             B3["Camoufox N<br/>WS :922X<br/>Fingerprint N"]
         end
+        note1["Note: WebSocket ports<br/>are dynamically assigned"]
     end
     
     NodeJS -->|"WebSocket"| API
@@ -55,6 +56,7 @@ flowchart TB
 3. **Load Balancer** distributes connections across browser instances
 4. **Browser Pool** maintains multiple Camoufox instances with unique fingerprints
 5. Each client gets a **WebSocket endpoint** to connect directly to a browser
+6. **WebSocket ports** are dynamically assigned by camoufox (use host network mode in Docker for pool mode)
 
 ---
 
@@ -351,15 +353,21 @@ camoufox-connector --config config.json
 docker build -t camoufox-connector .
 
 # Run in single mode
-docker run -p 8080:8080 -p 9222:9222 camoufox-connector
+docker run -p 8080:8080 -p 9222:9222 \
+  --shm-size=2gb \
+  -v camoufox-cache:/root/.cache/camoufox \
+  camoufox-connector
 
-# Run in pool mode
-docker run -p 8080:8080 -p 9222-9230:9222-9230 \
+# Run in pool mode (Linux: use host network for dynamic ports)
+docker run --network host \
   -e CAMOUFOX_MODE=pool \
   -e CAMOUFOX_POOL_SIZE=5 \
   --shm-size=4gb \
+  -v camoufox-cache:/root/.cache/camoufox \
   camoufox-connector
 ```
+
+> **Note:** Pool mode uses `--network host` because camoufox assigns WebSocket ports dynamically. On Windows/Mac, run natively or use a Linux VM.
 
 ### Docker Compose
 
@@ -375,18 +383,38 @@ docker compose --profile pool up
 
 ```yaml
 services:
-  camoufox:
+  camoufox-single:
     build: .
     ports:
       - "8080:8080"
-      - "9222-9230:9222-9230"
+      - "9222:9222"
+    environment:
+      - CAMOUFOX_MODE=single
+      - CAMOUFOX_HEADLESS=true
+    shm_size: 2gb
+    volumes:
+      - camoufox-cache:/root/.cache/camoufox
+    restart: unless-stopped
+
+  camoufox-pool:
+    build: .
+    # Use host network for dynamic WebSocket port access
+    network_mode: host
     environment:
       - CAMOUFOX_MODE=pool
       - CAMOUFOX_POOL_SIZE=5
       - CAMOUFOX_HEADLESS=true
     shm_size: 4gb
+    volumes:
+      - camoufox-cache:/root/.cache/camoufox
     restart: unless-stopped
+
+volumes:
+  camoufox-cache:
+    name: camoufox-browser-cache
 ```
+
+> **Note:** The `camoufox-cache` volume persists browser binaries between container restarts, improving startup time. Pool mode requires `network_mode: host` on Linux to support dynamically assigned WebSocket ports.
 
 
 ## Use Cases
