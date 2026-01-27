@@ -37,9 +37,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install camoufox browser
-RUN python -c "from camoufox.sync_api import Camoufox; print('Camoufox installed')" || \
-    python -m playwright install firefox
+# Pre-download camoufox browser binaries to avoid runtime downloads
+# This prevents multiple pool instances from downloading simultaneously
+RUN camoufox fetch
 
 # Install the application
 COPY . .
