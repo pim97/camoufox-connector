@@ -27,16 +27,21 @@ services:
       start_period: 30s
     # Shared memory size (required for browsers)
     shm_size: 2gb
+    volumes:
+      - camoufox-cache:/root/.cache/camoufox
 
   # Pool mode with multiple browser instances
+  # NOTE: WebSocket ports are dynamically assigned by camoufox.
+  # On Linux: use network_mode: host for full port access
+  # On Windows/Mac: run natively or use Linux VM
   camoufox-pool:
     build: .
     container_name: camoufox-connector-pool
     profiles:
       - pool
-    ports:
-      - "8080:8080"       # HTTP API
-      - "9222-9230:9222-9230"  # WebSocket endpoints
+    # Use host network for dynamic WebSocket port access
+    # Required because camoufox assigns random ports that can't be predicted
+    network_mode: host
     environment:
       - CAMOUFOX_MODE=pool
       - CAMOUFOX_POOL_SIZE=5
@@ -52,6 +57,8 @@ services:
       start_period: 60s
     # More shared memory for multiple browsers
     shm_size: 4gb
+    volumes:
+      - camoufox-cache:/root/.cache/camoufox
     deploy:
       resources:
         limits:
@@ -74,6 +81,12 @@ services:
       - CAMOUFOX_PROXY=${PROXY_URL:-}
     restart: unless-stopped
     shm_size: 4gb
+    volumes:
+      - camoufox-cache:/root/.cache/camoufox
+
+volumes:
+  camoufox-cache:
+    name: camoufox-browser-cache
 
 networks:
   default:
