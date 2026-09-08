@@ -205,9 +205,7 @@ class BrowserPool:
             if ws_endpoint:
                 instance.ws_endpoint = ws_endpoint
                 instance.is_healthy = True
-                logger.info(
-                    f"Browser instance {instance.index} ready at {ws_endpoint}"
-                )
+                logger.info(f"Browser instance {instance.index} ready at {ws_endpoint}")
             else:
                 raise RuntimeError("Failed to get WebSocket endpoint")
 
@@ -219,6 +217,7 @@ class BrowserPool:
     def _generate_launcher_script(self, port: int, proxy: Optional[str] = None) -> str:
         """Generate Python script to launch Camoufox server."""
         kwargs = self.settings.to_camoufox_kwargs(proxy=proxy)
+        kwargs["port"] = port
 
         # Build kwargs string, only including non-None values. Every value is
         # emitted via repr() so strings are safely escaped -- a proxy URL (or any
@@ -261,20 +260,20 @@ config = {{k: v for k, v in config.items() if v is not None}}
 
 # Launch the server (same as camoufox.server.launch_server but with filtered config)
 LAUNCH_SCRIPT = LOCAL_DATA / "launchServer.js"
-_nodejs = compute_driver_executable()[0]
-nodejs = _nodejs[0] if isinstance(_nodejs, tuple) else _nodejs
+nodejs, cli_path = compute_driver_executable()
+driver_package_path = Path(cli_path).parent
 
 data = orjson.dumps(to_camel_case_dict(config))
 
 process = subprocess.Popen(
-    [nodejs, str(LAUNCH_SCRIPT)],
-    cwd=Path(nodejs).parent / "package",
+    [nodejs, str(LAUNCH_SCRIPT), driver_package_path],
+    cwd=driver_package_path,
     stdin=subprocess.PIPE,
     text=True,
 )
 if process.stdin:
-    process.stdin.write(base64.b64encode(data).decode())
-    process.stdin.close()
+    process.stdin.write(base64.b64encode(data).decode() + "\\n")
+    process.stdin.flush()
 
 process.wait()
 raise RuntimeError("Server process terminated unexpectedly")
@@ -310,7 +309,9 @@ raise RuntimeError("Server process terminated unexpectedly")
                         remaining = await instance.process.stderr.read()
                         error_text = remaining.decode("utf-8", errors="replace")
                         if error_text:
-                            logger.error(f"Browser process exited with code {instance.process.returncode}")
+                            logger.error(
+                                f"Browser process exited with code {instance.process.returncode}"
+                            )
                             logger.error(f"Stderr: {error_text}")
                     except Exception:
                         pass
@@ -326,12 +327,14 @@ raise RuntimeError("Server process terminated unexpectedly")
                     if line:
                         text = line.decode("utf-8", errors="replace").strip()
                         # Always log in debug mode, or if it contains 'ws://'
-                        if self.settings.debug or 'ws://' in text.lower():
+                        if self.settings.debug or "ws://" in text.lower():
                             logger.debug(f"[Browser {instance.index}] stdout: {text}")
 
                         match = ws_pattern.search(text)
                         if match:
-                            endpoint = match.group(0).rstrip('.,;:!?')  # Clean up trailing punctuation
+                            endpoint = match.group(0).rstrip(
+                                ".,;:!?"
+                            )  # Clean up trailing punctuation
                             logger.info(f"Found endpoint in stdout: {endpoint}")
                             return endpoint
                 except asyncio.TimeoutError:
@@ -349,12 +352,14 @@ raise RuntimeError("Server process terminated unexpectedly")
                     if line:
                         text = line.decode("utf-8", errors="replace").strip()
                         # Always log in debug mode, or if it contains 'ws://'
-                        if self.settings.debug or 'ws://' in text.lower():
+                        if self.settings.debug or "ws://" in text.lower():
                             logger.debug(f"[Browser {instance.index}] stderr: {text}")
 
                         match = ws_pattern.search(text)
                         if match:
-                            endpoint = match.group(0).rstrip('.,;:!?')  # Clean up trailing punctuation
+                            endpoint = match.group(0).rstrip(
+                                ".,;:!?"
+                            )  # Clean up trailing punctuation
                             logger.info(f"Found endpoint in stderr: {endpoint}")
                             return endpoint
                 except asyncio.TimeoutError:
@@ -703,11 +708,7 @@ raise RuntimeError("Server process terminated unexpectedly")
 
     def get_all_endpoints(self) -> list[str]:
         """Get all healthy WebSocket endpoints."""
-        return [
-            inst.ws_endpoint
-            for inst in self.instances
-            if inst.is_healthy and inst.ws_endpoint
-        ]
+        return [inst.ws_endpoint for inst in self.instances if inst.is_healthy and inst.ws_endpoint]
 
     def get_stats(self) -> dict:
         """Get pool statistics."""
@@ -756,9 +757,7 @@ raise RuntimeError("Server process terminated unexpectedly")
         async with self._lock:
             self._drop_instance_leases_locked(index)
             if (rotate_proxy or blacklist_proxy) and self._proxy_pool:
-                instance.proxy = self._proxy_pool.rotate(
-                    index, blacklist_current=blacklist_proxy
-                )
+                instance.proxy = self._proxy_pool.rotate(index, blacklist_current=blacklist_proxy)
 
         await self._stop_instance(instance)
 
@@ -792,20 +791,19 @@ raise RuntimeError("Server process terminated unexpectedly")
             instance.last_health_check = time.time()
 
             # Check if process is still running
-            is_alive = (
-                instance.process is not None
-                and instance.process.returncode is None
-            )
+            is_alive = instance.process is not None and instance.process.returncode is None
 
             if not is_alive and instance.is_healthy:
                 logger.warning(f"Browser instance {instance.index} died unexpectedly")
                 instance.is_healthy = False
 
-            results["instances"].append({
-                "index": instance.index,
-                "healthy": instance.is_healthy,
-                "endpoint": instance.ws_endpoint,
-            })
+            results["instances"].append(
+                {
+                    "index": instance.index,
+                    "healthy": instance.is_healthy,
+                    "endpoint": instance.ws_endpoint,
+                }
+            )
 
         results["healthy"] = any(inst.is_healthy for inst in self.instances)
         return results

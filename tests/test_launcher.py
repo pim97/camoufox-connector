@@ -28,3 +28,11 @@ def test_launcher_normal_proxy_is_present():
     script = pool._generate_launcher_script(9222, "http://user:pass@host:8080")
     assert "proxy=" in script
     assert repr("http://user:pass@host:8080") in script
+
+
+def test_launcher_keeps_config_pipe_open():
+    pool = make_pool(n=1)
+    script = pool._generate_launcher_script(9222)
+
+    assert 'base64.b64encode(data).decode() + "\\n"' in script
+    assert "process.stdin.close()" not in script

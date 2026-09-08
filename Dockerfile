@@ -1,34 +1,8 @@
 # Camoufox Connector - Multi-stage Docker build
-# Base image with Python and system dependencies
+# Apify + Python + Playwright + Camoufox base image
+FROM apify/actor-python-playwright-camoufox:latest
 
-FROM python:3.11-slim as base
-
-# Install system dependencies for browsers
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    curl \
-    gnupg \
-    ca-certificates \
-    fonts-liberation \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libatspi2.0-0 \
-    libcups2 \
-    libdbus-1-3 \
-    libdrm2 \
-    libgbm1 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxfixes3 \
-    libxkbcommon0 \
-    libxrandr2 \
-    xdg-utils \
-    xvfb \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -39,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Pre-download camoufox browser binaries to avoid runtime downloads
 # This prevents multiple pool instances from downloading simultaneously
+# It is redundant but a nice fallback in case the base image is outdated
 RUN camoufox fetch
 
 # Install the application
@@ -66,5 +41,8 @@ ENV CAMOUFOX_MODE=single \
     CAMOUFOX_HUMANIZE=true \
     CAMOUFOX_BLOCK_IMAGES=false
 
+# Reset the path to entrypoint script in base image
+ENTRYPOINT ["/usr/src/app/xvfb-entrypoint.sh"]
+
 # Run with xvfb for headless support
-ENTRYPOINT ["python", "-m", "camoufox_connector.server"]
+CMD ["python", "-m", "camoufox_connector.server"]

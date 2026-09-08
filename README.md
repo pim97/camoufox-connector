@@ -29,7 +29,7 @@ flowchart TB
             B2["Camoufox 2<br/>WS :9223<br/>Fingerprint B"]
             B3["Camoufox N<br/>WS :922X<br/>Fingerprint N"]
         end
-        note1["Note: WebSocket ports<br/>are dynamically assigned"]
+        note1["Note: WebSocket ports<br/>start at WS_PORT_START"]
     end
     
     NodeJS -->|"WebSocket"| API
@@ -56,7 +56,7 @@ flowchart TB
 3. **Load Balancer** distributes connections across browser instances
 4. **Browser Pool** maintains multiple Camoufox instances with unique fingerprints
 5. Each client gets a **WebSocket endpoint** to connect directly to a browser
-6. **WebSocket ports** are dynamically assigned by camoufox (use host network mode in Docker for pool mode)
+6. **WebSocket ports** start at `WS_PORT_START` and increment for each pool instance
 
 ---
 
@@ -198,19 +198,20 @@ func main() {
 import httpx
 from playwright.async_api import async_playwright
 
+
 async def main():
     # Get endpoint from connector API
     async with httpx.AsyncClient() as client:
         response = await client.get("http://localhost:8080/next")
         endpoint = response.json()["endpoint"]
-    
+
     async with async_playwright() as p:
         browser = await p.firefox.connect(endpoint)
         page = await browser.new_page()
-        
+
         await page.goto("https://example.com")
         print(await page.title())
-        
+
         await browser.close()
 ```
 
@@ -433,7 +434,7 @@ docker run -p 8080:8080 -p 9222:9222 \
   -v camoufox-cache:/root/.cache/camoufox \
   camoufox-connector
 
-# Run in pool mode (Linux: use host network for dynamic ports)
+# Run in pool mode (Linux: host networking exposes the configured WebSocket ports)
 docker run --network host \
   -e CAMOUFOX_MODE=pool \
   -e CAMOUFOX_POOL_SIZE=5 \
@@ -473,7 +474,7 @@ services:
 
   camoufox-pool:
     build: .
-    # Use host network for dynamic WebSocket port access
+    # Use host network to expose the configured WebSocket ports
     network_mode: host
     environment:
       - CAMOUFOX_MODE=pool
@@ -489,7 +490,7 @@ volumes:
     name: camoufox-browser-cache
 ```
 
-> **Note:** The `camoufox-cache` volume persists browser binaries between container restarts, improving startup time. Pool mode requires `network_mode: host` on Linux to support dynamically assigned WebSocket ports.
+> **Note:** The `camoufox-cache` volume persists browser binaries between container restarts, improving startup time. In pool mode, either use `network_mode: host` on Linux or publish the configured WebSocket port range.
 
 
 ## Use Cases
